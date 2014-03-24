@@ -21,16 +21,20 @@ Let's give a simple example a username that isn't allowed to have less then 4 le
 
 Regex:
 
-  /^[a-z][a-z0-9]{3,}$/i
+```javascript
+/^[a-z][a-z0-9]{3,}$/i
+```
   
 RegCode (JavaScript):
 
-  RC('i')
-    .start()
-    .range('a-z')
-    .range('a-z0-9').repeat(3,Infinity)
-    .end();
-  
+```javascript
+RC('i')
+  .start()
+  .range('a-z')
+  .range('a-z0-9').repeat(3,Infinity)
+  .end();
+```
+
 While the Regex is still readable in this case it may grow out into a disaster while RegCode will always be readable and less errornous.
 
 # To do
