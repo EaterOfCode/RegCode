@@ -66,6 +66,9 @@
                 type: 'start'
             })
         },
+        begin: function() {
+            return this.start();
+        },
         end: function() {
             return this._({
                 type: 'end'

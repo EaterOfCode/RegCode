@@ -1,11 +1,10 @@
 <?php
-
-public function RC($flags){
+function RC($flags = ""){
 	return new RegCode($flags);
 }
 
-public static class RegCodeFn {
-	
+class RegCodeFn {
+
 	public static function escape($s){
 		return preg_replace("/[\\/\\\\\\^\\[\\]\\.\\$\\{\\}\\*\\+\\(\\)\\|\\?\\<\\>]/", "\\\\$0", $s);
 	}
@@ -26,7 +25,7 @@ public static class RegCodeFn {
 				break;
 			case 'group':
 				$res = RegCodeFn::compileArr($item['chain']);
-				return  '(' . ($item['assertion']?:'') . ($item['name']?(($item['assertion']?'':'?') . 'P<' . $item['name'] . '>' ):'') . $res['code'] . ')';
+				return  '(' . ($item['assertion']?$item['assertion']:'') . ($item['name']?(($item['assertion']?'':'?') . 'P<' . $item['name'] . '>' ):'') . $res['code'] . ')';
 				break;
 			case 'raw':
 			case 'text':
@@ -53,24 +52,19 @@ public static class RegCodeFn {
 
 }
 
-public class RegCode {
+class RegCode {
 	
 	public $flags;
 
 	public $chain;
 
-	private $_compiled;
-
-	private $groups;
-
-	public function __construct($flags){
+	public function __construct($flags = ""){
 		if(is_string($flags)){
-			$this->flags = $flags?:"";
+			$this->flags = $flags?$flags:"";
 		}else{
 			$this->flags = $flags->flags;
-			$this->chain = array_merge(array(), $flags->chain);
+			$this->chain = clone $flags->chain;
 		}
-		$this->groups = array("matched");
 	}
 
 	public function start(){
@@ -78,13 +72,16 @@ public class RegCode {
 		return $this;
 	}
 
+	public function begin(){
+		return $this->start();
+	}
+
 	public function end(){
-		$this->chain[] = array('type'=>"start");
+		$this->chain[] = array('type'=>"end");
 		return $this;
 	}
 
-	public function range($allowed, $escape){
-		if($escape == null) $escape = true;
+	public function range($allowed, $escape = true){
 		if($escape) $allowed = RegCodeFn::escape($allowed);
 		$this->chain[] = array(
 			'type'=>'range',
@@ -94,7 +91,7 @@ public class RegCode {
 		return $this;
 	}
 
-	public function notRange($allowed, $escape){
+	public function notRange($allowed, $escape = true){
 		if($escape == null) $escape = true;
 		if($escape) $allowed = RegCodeFn::escape($allowed);
 		$this->chain[] = array(
@@ -105,9 +102,9 @@ public class RegCode {
 		return $this;
 	}
 
-	public function group($name, $assertion, $chain){
+	public function group($name, $assertion = null, $chain = null){
 		$chain = $chain == null?($assertion == null ? $name : $assertion):$chain;
-		$assertion = is_string($assertion) || $assertion ===  ? $assertion : false;
+		$assertion = is_string($assertion) ? $assertion : false;
 		$name = is_string($name) ? $name : false;
 		$this->chain[] = array(
 			'type'=>'group',
@@ -123,8 +120,8 @@ public class RegCode {
 		return $this;
 	}
 
-	public function repeat($min, $max){
-		$code = ($min == '?' && $min == '*' && $min == '+')?$min:'{'.($min?:0) . ',' . ($max?:'') . '}';
+	public function repeat($min, $max = false){
+		$code = ($min == '?' && $min == '*' && $min == '+')?$min:'{'.($min?$min:0) . ($max===false?'':',' . ($max?$max:'')) . '}';
 		$this->chain[] = array(
 			"type"=>"repeat",
 			"code"=>$code
@@ -150,16 +147,16 @@ public class RegCode {
 	}
 
 	public function __toString(){
-		return 	"/" + RegCodeFn::compileArr($this->chain) + "/" + $this->flags
+		return 	"/" . RegCodeFn::compileArr($this->chain) . "/" . $this->flags;
 	}
 
-	public function compile($force){
+	public function compile(){
 		return new RegCodeCompiled(RegCodeFn::compileArr($this->chain), $this->flags);
 	}
 
 }
 
-public class RegCodeCompiled {
+class RegCodeCompiled {
 	public $code;
 	public $flags;
 	public function __construct($code, $flags){
@@ -167,15 +164,15 @@ public class RegCodeCompiled {
 		$this->flags = $flags;
 	}
 	public function match($subject, &$matches = null, $flags = 0, $offset  = 0){
-		return preg_match("/" + $this->code + "/" + $this->flags, $subject, $matches, $flags, $offset);
+		return preg_match("/" . $this->code . "/" . $this->flags, $subject, $matches, $flags, $offset);
 	}
 	public function match_all(){
 
 	}
 	public function replace($replacement, $subject, $limit = -1, &$count = null){
-		return preg_replace("/" + $this->code + "/" + $this->flags, $replacement, $subject, $limit, &$count)
+		return preg_replace("/" . $this->code . "/" . $this->flags, $replacement, $subject, $limit, $count);
 	}
 	public function replace_callback($callback, $subject, $limit = -1, &$count = null){
-		return preg_replace_callback("/" + $this->code + "/" + $this->flags, $callback, $subject, $limit, &$count)
+		return preg_replace_callback("/" . $this->code . "/" . $this->flags, $callback, $subject, $limit, $count);
 	}
 }
