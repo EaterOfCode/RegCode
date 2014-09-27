@@ -43,7 +43,7 @@
     };
 
     var RChain = function(flags) {
-        if (!Array.isArray(flags)) {
+        if (Array.isArray(flags)) {
             this.chain = flags.chain.concat([]);
             this.flags = flags.flags;
         } else {
